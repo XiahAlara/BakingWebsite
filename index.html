@@ -67,6 +67,12 @@
     .msg{margin:8px 0;padding:8px 10px;border-radius:10px;max-width:85%}
     .msg.user{background:#FFEFEF;margin-left:auto}
     .msg.bot{background:#F2FFF7}
+    .typing{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,142,170,0.12);color:#b53073;margin-top:12px}
+    .typing span{width:8px;height:8px;border-radius:50%;background:#ff8daa;animation:typing 1.2s infinite ease-in-out}
+    .typing span:nth-child(2){animation-delay:0.2s}
+    .typing span:nth-child(3){animation-delay:0.4s}
+    @keyframes typing{0%,80%,100%{opacity:0.3}40%{opacity:1}}
+    .hidden{display:none!important}
     .input-row{display:flex;gap:8px}
     .input-row input{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,0.06)}
     .btn{padding:8px 12px;border-radius:10px;border:none;background:var(--accent);color:white;font-weight:700}
@@ -336,10 +342,16 @@
     <section id="ai" style="margin-top:22px;display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start">
       <div class="side">
         <h3>AI Helper</h3>
-        <p style="margin-top:4px;color:var(--muted)">Type a question and get helpful baking tips instantly (demo responses only).</p>
+        <p style="margin-top:4px;color:var(--muted)">Type a question and get helpful baking tips instantly from Xiah's real AI baking assistant.</p>
         <div class="chat" style="margin-top:8px">
           <div id="messages" class="messages" aria-live="polite">
             <div class="msg bot">Hi! I'm Xiah's Baking Helper. Try asking about <strong>cake</strong>, <strong>cookies</strong>, <strong>bread</strong>, or <strong>cupcakes</strong>.</div>
+          </div>
+          <div id="typing" class="typing hidden">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span>Xiah is typing...</span>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px" class="input-row">
             <input id="chatInput" placeholder="Ask the baking helper..." aria-label="Ask the baking helper" />
@@ -424,10 +436,16 @@
     const messages = document.getElementById('messages');
     const chatInput = document.getElementById('chatInput');
     const sendChat = document.getElementById('sendChat');
+    const typing = document.getElementById('typing');
     const subscribeBtn = document.getElementById('subscribeBtn');
     const subscribeBtn2 = document.getElementById('subscribeBtn2');
     const modal = document.getElementById('modal');
     const closeModal = document.getElementById('closeModal');
+
+    function setTyping(active){
+      if(!typing) return;
+      typing.classList.toggle('hidden', !active);
+    }
 
     // A small helper to show a message in the AI chat box
     function pushMessage(text, who='bot'){
@@ -493,42 +511,30 @@
       return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
-    // Simulated AI responder. It checks for keywords and returns sample tips.
-    function respondTo(text){
-      const q = text.toLowerCase();
+    // Real AI responder that sends user text to the secure /api/chat backend endpoint.
+    async function respondTo(text){
+      setTyping(true);
+      try {
+        const response = await fetch('/api/chat', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ message: text })
+        });
 
-      // Small mapping of keywords to responses
-      const responses = [
-        {k:'cake', r:"Tip: For a moist cake, don't overmix the batter and measure flour by spooning it into the cup."},
-        {k:'cookies', r:"Tip: Chill cookie dough for better shape and texture. It also prevents spreading."},
-        {k:'bread', r:"Tip: If your bread is dense, try longer kneading and ensure your yeast is active (warm water, not hot)."},
-        {k:'cupcake', r:"Tip: Fill cupcake liners about 2/3 full so they rise nicely without overflowing."},
-        {k:'brownie', r:"Tip: For fudgy brownies, slightly underbake them and cool completely before slicing."},
-        {k:'donut', r:"Tip: For baked donuts, don't overmix — a light batter keeps them tender."},
-      ];
-
-      // Find a matching response by keyword
-      for(const item of responses){
-        if(q.includes(item.k)){
-          // add a little typing delay to feel interactive
-          pushMessage('<em>...thinking...</em>','bot');
-          setTimeout(()=>{
-            // remove the thinking message and add real one
-            const thinking = messages.querySelector('.msg.bot:last-child');
-            if(thinking && thinking.innerHTML.includes('thinking')) thinking.remove();
-            pushMessage(escapeHtml(item.r),'bot');
-          },600);
+        const data = await response.json();
+        if(!response.ok){
+          const errorMessage = data?.error || 'Sorry, the baking assistant is unavailable right now. Please try again later.';
+          pushMessage(escapeHtml(errorMessage), 'bot');
           return;
         }
-      }
 
-      // Default helpful replies if no keyword matched
-      pushMessage('<em>...thinking...</em>','bot');
-      setTimeout(()=>{
-        const thinking = messages.querySelector('.msg.bot:last-child');
-        if(thinking && thinking.innerHTML.includes('thinking')) thinking.remove();
-        pushMessage("That's a great question! Try asking about a specific item like 'cake' or 'bread' for targeted tips.", 'bot');
-      },700);
+        pushMessage(escapeHtml(data.reply || 'I am here to help with your baking questions!'), 'bot');
+      } catch(error){
+        console.error('Chat request failed:', error);
+        pushMessage('Sorry, I could not connect to the baking assistant. Please try again later.', 'bot');
+      } finally {
+        setTyping(false);
+      }
     }
 
     // Initialize: wire quickAsk Enter key

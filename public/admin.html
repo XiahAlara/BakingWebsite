@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Xiah's Baking AI</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="admin">
+    <header class="site-header admin-header">
+      <div class="brand">Xiah's Baking AI Admin</div>
+      <nav class="site-nav">
+        <a href="index.html">Back to site</a>
+      </nav>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-panel">
+        <div class="admin-card">
+          <h2>Admin Login</h2>
+          <form id="login-form" class="admin-form">
+            <label for="admin-password">Password</label>
+            <input id="admin-password" type="password" placeholder="Enter admin password" required />
+            <button type="submit" class="button button-primary">Login</button>
+          </form>
+        </div>
+
+        <div id="admin-dashboard" class="admin-card hidden">
+          <h2>Manage Recipes</h2>
+
+          <form id="recipe-form" class="admin-form" enctype="multipart/form-data">
+            <input type="hidden" id="recipe-id" />
+            <label for="title">Title</label>
+            <input id="title" type="text" placeholder="Recipe title" required />
+
+            <label for="country">Country</label>
+            <input id="country" type="text" placeholder="Recipe country" />
+
+            <label for="category">Category</label>
+            <input id="category" type="text" placeholder="Recipe category" />
+
+            <label for="prep_time">Prep Time</label>
+            <input id="prep_time" type="text" placeholder="e.g. 15 mins" />
+
+            <label for="bake_time">Bake Time</label>
+            <input id="bake_time" type="text" placeholder="e.g. 30 mins" />
+
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+
+            <label for="ingredients">Ingredients</label>
+            <textarea id="ingredients" rows="4" placeholder="List ingredients separated by commas"></textarea>
+
+            <label for="instructions">Instructions</label>
+            <textarea id="instructions" rows="5" placeholder="Write step-by-step instructions"></textarea>
+
+            <label for="image">Upload Image</label>
+            <input id="image" type="file" accept="image/*" />
+
+            <button id="save-recipe" type="submit" class="button button-primary">Save Recipe</button>
+            <button id="cancel-edit" type="button" class="button button-secondary hidden">Cancel Edit</button>
+          </form>
+
+          <div class="recipe-list-wrapper">
+            <h3>Recipe Library</h3>
+            <div id="admin-recipe-list" class="admin-recipe-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© Xiah's Baking AI</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
