@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xiah's Baking AI</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="home">
+    <header class="site-header">
+      <div class="brand">Xiah's Baking AI</div>
+      <nav class="site-nav">
+        <a href="#home">Home</a>
+        <a href="#recipes">Recipes</a>
+        <a href="#ai-helper">AI Helper</a>
+        <a href="#pro">AI Pro</a>
+        <a href="admin.html" class="admin-link">Admin</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <div>
+          <p class="eyebrow">Delicious baking inspiration</p>
+          <h1>Welcome to Xiah's Baking AI</h1>
+          <p>Create, search, and save recipes with a friendly baking helper.</p>
+          <a href="#recipes" class="button button-primary">Browse Recipes</a>
+        </div>
+        <div class="hero-image"></div>
+      </section>
+
+      <section class="search-section" id="recipes">
+        <div class="section-heading">
+          <h2>Find your next favorite recipe</h2>
+          <p>Search by title, category, or ingredient.</p>
+        </div>
+
+        <div class="search-box">
+          <input id="search-input" type="search" placeholder="Search recipes by title, category, or ingredient..." />
+          <button id="search-button" class="button">Search</button>
+        </div>
+
+        <div id="recipe-grid" class="recipe-grid"></div>
+      </section>
+
+      <section class="ai-helper" id="ai-helper">
+        <div class="section-heading">
+          <h2>AI Helper Chat</h2>
+          <p>Ask for baking tips, flavor ideas, or recipe guidance.</p>
+        </div>
+        <div class="chat-card">
+          <div id="chat-messages" class="chat-messages"></div>
+          <div id="typing-indicator" class="typing-indicator hidden">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span>Xiah is typing...</span>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <input id="chat-input" type="text" placeholder="Ask Xiah something like 'How do I make soft cookies?'" autocomplete="off" />
+            <button type="submit" class="button">Send</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="ai-pro" id="pro">
+        <div class="pro-card">
+          <span class="tag">AI Pro</span>
+          <h2>$17 / month</h2>
+          <p>Unlock priority recipe suggestions, extra baking hacks, and premium display cards.</p>
+          <ul>
+            <li>Unlimited recipe search</li>
+            <li>Fast AI baking tips</li>
+            <li>Beautiful recipe presentation</li>
+          </ul>
+          <button class="button button-secondary">Join Xiah Pro</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© Xiah's Baking AI</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
