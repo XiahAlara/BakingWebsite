@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Xiah's Baking AI</title>
+  <style>
+    /* -----------------------------
+       Basic Reset and Variables
+       ----------------------------- */
+    :root{
+      --bg:#FFF7F0;
+      --card:#FFFFFF;
+      --accent:#FF8DAA;
+      --accent-2:#FFD27F;
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.6);
+      --radius:14px;
+      --shadow: 0 6px 18px rgba(0,0,0,0.08);
+      --max-width:1100px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,var(--bg),#FFFDF8); color:#222}
+    a{color:inherit}
+
+    /* -----------------------------
+       Layout
+       ----------------------------- */
+    .container{max-width:var(--max-width);margin:24px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;box-shadow:var(--shadow)}
+    nav{display:flex;gap:12px;align-items:center}
+    nav a{padding:8px 12px;border-radius:10px;text-decoration:none;font-weight:600;color:#4b2b2b}
+    nav a.cta{background:linear-gradient(90deg,#FFB6D5,#FFC87E);color:#4b2b2b}
+
+    /* -----------------------------
+       Hero / Home
+       ----------------------------- */
+    .hero{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:center;margin-top:18px}
+    .welcome{background:var(--card);padding:22px;border-radius:var(--radius);box-shadow:var(--shadow)}
+    .welcome h1{margin:0 0 8px;font-size:26px;color:#63324a}
+    .welcome p{margin:0 0 14px;color:var(--muted)}
+    .search-bar{display:flex;gap:8px}
+    .search-bar input{flex:1;padding:10px 12px;border-radius:10px;border:2px solid rgba(0,0,0,0.04)}
+    .search-bar button{padding:10px 12px;border-radius:10px;background:var(--accent);color:white;border:none}
+
+    /* -----------------------------
+       Recipes Grid
+       ----------------------------- */
+    .recipes{margin-top:24px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+    .thumb{height:140px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:44px}
+    .card h3{margin:0 0 6px}
+    .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .ingredients{font-size:14px;margin:6px 0 10px;padding-left:14px}
+    .instructions{font-size:14px;color:#333}
+    .tag{display:inline-block;background:linear-gradient(90deg,#f6d7e0,#fff3d1);padding:6px 8px;border-radius:8px;font-weight:600;margin-right:6px;font-size:13px}
+
+    /* -----------------------------
+       AI Helper Chat & Pro Panel
+       ----------------------------- */
+    .side{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow)}
+    .chat{display:flex;flex-direction:column;gap:8px;height:300px}
+    .messages{flex:1;overflow:auto;padding:8px;background:linear-gradient(180deg,rgba(255,255,255,0.6),rgba(255,255,255,0.3));border-radius:10px}
+    .msg{margin:8px 0;padding:8px 10px;border-radius:10px;max-width:85%}
+    .msg.user{background:#FFEFEF;margin-left:auto}
+    .msg.bot{background:#F2FFF7}
+    .input-row{display:flex;gap:8px}
+    .input-row input{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(0,0,0,0.06)}
+    .btn{padding:8px 12px;border-radius:10px;border:none;background:var(--accent);color:white;font-weight:700}
+
+    /* -----------------------------
+       AI Pro section
+       ----------------------------- */
+    .pro{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:linear-gradient(180deg,#FFF6F9,#FFFDF3);box-shadow:var(--shadow)}
+    .price{font-size:22px;font-weight:800;color:#7a2f47}
+    .benefits{list-style:none;padding:0;margin:0}
+    .benefits li{margin:8px 0;padding-left:18px;position:relative}
+    .benefits li:before{content:'✨';position:absolute;left:0}
+
+    /* -----------------------------
+       Footer
+       ----------------------------- */
+    footer{margin-top:26px;padding:18px;text-align:center;color:var(--muted)}
+
+    /* -----------------------------
+       Responsive
+       ----------------------------- */
+    @media (max-width:1000px){
+      .hero{grid-template-columns:1fr}
+      .grid{grid-template-columns:repeat(2,1fr)}
+      .thumb{height:120px}
+    }
+    @media (max-width:600px){
+      nav{display:none}
+      header{justify-content:space-between}
+      .grid{grid-template-columns:1fr}
+      .hero{gap:10px}
+      .thumb{height:100px;font-size:34px}
+    }
+
+    /* -----------------------------
+       Modal (subscribe popup)
+       ----------------------------- */
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4)}
+    .modal .panel{background:white;padding:18px;border-radius:12px;max-width:380px;width:94%;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header with logo and navigation -->
+    <header>
+      <div class="brand">
+        <div class="logo">XB</div>
+        <div>
+          <div style="font-weight:800">Xiah's Baking AI</div>
+          <div style="font-size:13px;color:var(--muted)">Baking made fun for everyone</div>
+        </div>
+      </div>
+      <nav aria-label="Main navigation">
+        <a href="#home">Home</a>
+        <a href="#recipes">Recipes</a>
+        <a href="#ai">AI Helper</a>
+        <a href="#pro" class="cta">AI Pro</a>
+      </nav>
+    </header>
+
+    <!-- HERO / Home Section -->
+    <section id="home" class="hero">
+      <div class="welcome">
+        <h1>Welcome to Xiah's Baking AI!</h1>
+        <p>Easy, colorful, and beginner-friendly baking recipes. Click a recipe to read, or use the AI Helper for quick tips.</p>
+
+        <!-- Search bar for recipes -->
+        <div class="search-bar" style="margin-top:12px">
+          <input id="search" placeholder="Search recipes by name or ingredient" aria-label="Search recipes" />
+          <button id="searchBtn">Search</button>
+        </div>
+
+        <!-- Quick tags to filter -->
+        <div style="margin-top:12px">
+          <span class="tag" data-filter="cake">Cake</span>
+          <span class="tag" data-filter="cookies">Cookies</span>
+          <span class="tag" data-filter="bread">Bread</span>
+          <span class="tag" data-filter="cupcakes">Cupcakes</span>
+        </div>
+      </div>
+
+      <!-- Side: AI Pro teaser and small AI chat starter -->
+      <aside style="display:flex;flex-direction:column;gap:12px">
+        <div class="side">
+          <div style="font-weight:800">AI Helper (Quick)</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Ask baking questions or try keywords like "cake".</div>
+          <div style="display:flex;gap:8px">
+            <input id="quickAsk" placeholder="Type a quick question" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)" />
+            <button id="quickAskBtn" class="btn">Ask</button>
+          </div>
+        </div>
+
+        <div class="pro">
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong>AI Pro</strong><span class="price">$17/month</span></div>
+          <div style="font-size:13px;color:var(--muted)">Go Pro for extra baking power!</div>
+          <ul class="benefits">
+            <li>Unlimited questions</li>
+            <li>Personalized recipes</li>
+            <li>Baking planner</li>
+            <li>Advanced baking tips</li>
+          </ul>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="subscribeBtn" class="btn">Subscribe</button>
+            <a href="#pro" style="align-self:center;color:#7a2f47;font-weight:700">Learn more</a>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- RECIPES SECTION -->
+    <section id="recipes" class="recipes">
+      <h2 style="margin:6px 0 10px">Recipes</h2>
+      <!-- Grid of recipe cards -->
+      <div id="recipesGrid" class="grid">
+        <!-- Each card includes a simple SVG 'picture', a list of ingredients, and instructions. -->
+
+        <!-- Recipe 1: Cake -->
+        <article class="card" data-keywords="cake vanilla butter sugar flour" data-title="Classic Vanilla Cake">
+          <div class="thumb" style="background:linear-gradient(135deg,#FFDDEB,#FFF4D1)">
+            <!-- simple cake svg/icon -->
+            <svg width="100" height="80" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+              <rect x="12" y="28" width="76" height="32" rx="8" fill="#FF9FB1"/>
+              <rect x="24" y="18" width="52" height="14" rx="6" fill="#fff"/>
+              <circle cx="50" cy="12" r="8" fill="#FFD27F"/>
+            </svg>
+          </div>
+          <h3>Classic Vanilla Cake</h3>
+          <div class="meta">Prep: 20m • Bake: 30m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>2 cups flour</li>
+              <li>1.5 cups sugar</li>
+              <li>1 cup milk</li>
+              <li>2 eggs</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Preheat oven to 350°F (175°C).</li>
+              <li>Mix dry ingredients, add wet ingredients, stir until smooth.</li>
+              <li>Bake 28–32 minutes or until a toothpick comes out clean.</li>
+            </ol>
+          </div>
+        </article>
+
+        <!-- Recipe 2: Cookies -->
+        <article class="card" data-keywords="cookies chocolate butter sugar flour" data-title="Chocolate Chip Cookies">
+          <div class="thumb" style="background:linear-gradient(135deg,#FFF0D6,#FFE4F2)">
+            <div style="font-size:44px">🍪</div>
+          </div>
+          <h3>Chocolate Chip Cookies</h3>
+          <div class="meta">Prep: 15m • Bake: 10m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>2 cups flour</li>
+              <li>1 cup sugar</li>
+              <li>1 cup butter</li>
+              <li>1 cup chocolate chips</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Preheat oven to 375°F (190°C).</li>
+              <li>Cream butter and sugar, add flour, fold in chips.</li>
+              <li>Scoop onto tray and bake 9–12 minutes.</li>
+            </ol>
+          </div>
+        </article>
+
+        <!-- Recipe 3: Cupcakes -->
+        <article class="card" data-keywords="cupcakes vanilla frosting" data-title="Fun Frosted Cupcakes">
+          <div class="thumb" style="background:linear-gradient(135deg,#E6FFFE,#FFF0F6)">
+            <div style="font-size:44px">🧁</div>
+          </div>
+          <h3>Fun Frosted Cupcakes</h3>
+          <div class="meta">Prep: 15m • Bake: 18m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>1.5 cups flour</li>
+              <li>1 cup sugar</li>
+              <li>2 eggs</li>
+              <li>Frosting of choice</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Mix batter, fill cupcake liners 2/3 full.</li>
+              <li>Bake 16–20 minutes at 350°F (175°C).</li>
+              <li>Cool and decorate with frosting and sprinkles.</li>
+            </ol>
+          </div>
+        </article>
+
+        <!-- Recipe 4: Bread -->
+        <article class="card" data-keywords="bread yeast dough flour" data-title="Simple Homemade Bread">
+          <div class="thumb" style="background:linear-gradient(135deg,#FFF4E1,#E6FFF5)">
+            <div style="font-size:44px">🍞</div>
+          </div>
+          <h3>Simple Homemade Bread</h3>
+          <div class="meta">Prep: 15m • Rise: 1h • Bake: 30m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>3 cups flour</li>
+              <li>1 packet yeast</li>
+              <li>1.5 cups warm water</li>
+              <li>1 tsp salt</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Mix yeast with warm water, add flour and salt, knead into dough.</li>
+              <li>Let rise 45–60 minutes, shape, then bake 30–35 minutes at 375°F (190°C).</li>
+            </ol>
+          </div>
+        </article>
+
+        <!-- Recipe 5: Brownies -->
+        <article class="card" data-keywords="brownies chocolate cocoa butter" data-title="Fudgy Brownies">
+          <div class="thumb" style="background:linear-gradient(135deg,#EDE6FF,#FFF2E6)">
+            <div style="font-size:44px">🍫</div>
+          </div>
+          <h3>Fudgy Brownies</h3>
+          <div class="meta">Prep: 10m • Bake: 25m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>1 cup butter</li>
+              <li>2 cups sugar</li>
+              <li>3/4 cup cocoa powder</li>
+              <li>3 eggs</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Mix wet ingredients, stir in dry ingredients until combined.</li>
+              <li>Pour into pan and bake 22–28 minutes at 350°F (175°C).</li>
+            </ol>
+          </div>
+        </article>
+
+        <!-- Recipe 6: Donuts -->
+        <article class="card" data-keywords="donuts frying sugar glaze" data-title="Baked Donuts with Glaze">
+          <div class="thumb" style="background:linear-gradient(135deg,#FFF0F0,#E9FFF6)">
+            <div style="font-size:44px">🍩</div>
+          </div>
+          <h3>Baked Donuts with Glaze</h3>
+          <div class="meta">Prep: 20m • Bake: 10m</div>
+          <div class="ingredients"><strong>Ingredients:</strong>
+            <ul>
+              <li>2 cups flour</li>
+              <li>1 cup milk</li>
+              <li>2 eggs</li>
+              <li>Glaze (powdered sugar + milk)</li>
+            </ul>
+          </div>
+          <div class="instructions"><strong>Instructions:</strong>
+            <ol>
+              <li>Mix batter, pipe into donut pan, bake 8–10 minutes at 375°F (190°C).</li>
+              <li>Cool and dip into glaze.</li>
+            </ol>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- AI HELPER Section (full) -->
+    <section id="ai" style="margin-top:22px;display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start">
+      <div class="side">
+        <h3>AI Helper</h3>
+        <p style="margin-top:4px;color:var(--muted)">Type a question and get helpful baking tips instantly (demo responses only).</p>
+        <div class="chat" style="margin-top:8px">
+          <div id="messages" class="messages" aria-live="polite">
+            <div class="msg bot">Hi! I'm Xiah's Baking Helper. Try asking about <strong>cake</strong>, <strong>cookies</strong>, <strong>bread</strong>, or <strong>cupcakes</strong>.</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px" class="input-row">
+            <input id="chatInput" placeholder="Ask the baking helper..." aria-label="Ask the baking helper" />
+            <button id="sendChat" class="btn">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: quick facts and tips -->
+      <aside style="display:flex;flex-direction:column;gap:12px">
+        <div class="side">
+          <strong>Quick Baking Tips</strong>
+          <ul style="margin-top:8px;color:var(--muted)">
+            <li>Measure flour by spooning into the cup, not scooping.</li>
+            <li>Room temperature eggs mix better into batter.</li>
+            <li>Preheat your oven for best rise and texture.</li>
+          </ul>
+        </div>
+
+        <div class="side">
+          <strong>Need more?</strong>
+          <div style="font-size:13px;color:var(--muted);margin-top:6px">Upgrade to AI Pro for personalized help and planning.</div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- AI Pro Full Section -->
+    <section id="pro" style="margin-top:22px">
+      <div class="pro">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h3 style="margin:0">AI Pro — Premium</h3>
+            <div style="font-size:13px;color:var(--muted)">Perfect for aspiring bakers and busy families</div>
+          </div>
+          <div style="text-align:right">
+            <div class="price">$17/month</div>
+            <div style="font-size:12px;color:var(--muted)">Cancel anytime</div>
+          </div>
+        </div>
+        <ul style="margin-top:10px">
+          <li>Unlimited questions</li>
+          <li>Personalized recipes</li>
+          <li>Baking planner to schedule your bakes</li>
+          <li>Advanced baking tips and troubleshooting</li>
+        </ul>
+        <div style="margin-top:12px">
+          <button id="subscribeBtn2" class="btn">Subscribe</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      © Xiah's Baking AI
+    </footer>
+  </div>
+
+  <!-- Modal for Subscribe Demo -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="panel">
+      <h3>Demo only</h3>
+      <p>This is a demo popup — no real payment is processed.</p>
+      <div style="margin-top:12px">
+        <button id="closeModal" class="btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* -----------------------------
+       Beginner-friendly JavaScript
+       Comments explain what each part does.
+       ----------------------------- */
+
+    // Grab important DOM elements we will use
+    const searchInput = document.getElementById('search');
+    const searchBtn = document.getElementById('searchBtn');
+    const recipesGrid = document.getElementById('recipesGrid');
+    const tags = document.querySelectorAll('.tag');
+    const quickAsk = document.getElementById('quickAsk');
+    const quickAskBtn = document.getElementById('quickAskBtn');
+    const messages = document.getElementById('messages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChat = document.getElementById('sendChat');
+    const subscribeBtn = document.getElementById('subscribeBtn');
+    const subscribeBtn2 = document.getElementById('subscribeBtn2');
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('closeModal');
+
+    // A small helper to show a message in the AI chat box
+    function pushMessage(text, who='bot'){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who==='user' ? 'user' : 'bot');
+      div.innerHTML = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight; // keep scrolled to bottom
+    }
+
+    // Basic search: match against title or keywords in dataset attributes
+    function searchRecipes(query){
+      const q = query.trim().toLowerCase();
+      const cards = recipesGrid.querySelectorAll('.card');
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title').toLowerCase();
+        const keywords = card.getAttribute('data-keywords').toLowerCase();
+        const match = !q || title.includes(q) || keywords.includes(q);
+        card.style.display = match ? 'flex' : 'none';
+      });
+    }
+
+    // Wire up the search controls
+    searchBtn.addEventListener('click', ()=> searchRecipes(searchInput.value));
+    searchInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') searchRecipes(searchInput.value); });
+
+    // Tag buttons filter by a simple keyword
+    tags.forEach(tag => tag.addEventListener('click', ()=>{
+      const filter = tag.getAttribute('data-filter');
+      searchInput.value = filter; // show the tag in the input
+      searchRecipes(filter);
+    }));
+
+    // Quick ask: sends a short message to the chat and triggers a canned response
+    quickAskBtn.addEventListener('click', ()=>{
+      const q = quickAsk.value.trim();
+      if(!q) return;
+      pushMessage(escapeHtml(q), 'user');
+      respondTo(q);
+      quickAsk.value = '';
+    });
+
+    // Chat send button
+    sendChat.addEventListener('click', ()=>{
+      const q = chatInput.value.trim();
+      if(!q) return;
+      pushMessage(escapeHtml(q), 'user');
+      respondTo(q);
+      chatInput.value = '';
+    });
+    chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendChat.click(); });
+
+    // Subscribe buttons open a modal that explains this is a demo
+    function openModal(){ modal.style.display = 'flex'; }
+    function closeModalFn(){ modal.style.display = 'none'; }
+    subscribeBtn.addEventListener('click', openModal);
+    subscribeBtn2.addEventListener('click', openModal);
+    closeModal.addEventListener('click', closeModalFn);
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModalFn(); });
+
+    // Utility: escape user text so HTML isn't injected (simple beginner-safe helper)
+    function escapeHtml(str){
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Simulated AI responder. It checks for keywords and returns sample tips.
+    function respondTo(text){
+      const q = text.toLowerCase();
+
+      // Small mapping of keywords to responses
+      const responses = [
+        {k:'cake', r:"Tip: For a moist cake, don't overmix the batter and measure flour by spooning it into the cup."},
+        {k:'cookies', r:"Tip: Chill cookie dough for better shape and texture. It also prevents spreading."},
+        {k:'bread', r:"Tip: If your bread is dense, try longer kneading and ensure your yeast is active (warm water, not hot)."},
+        {k:'cupcake', r:"Tip: Fill cupcake liners about 2/3 full so they rise nicely without overflowing."},
+        {k:'brownie', r:"Tip: For fudgy brownies, slightly underbake them and cool completely before slicing."},
+        {k:'donut', r:"Tip: For baked donuts, don't overmix — a light batter keeps them tender."},
+      ];
+
+      // Find a matching response by keyword
+      for(const item of responses){
+        if(q.includes(item.k)){
+          // add a little typing delay to feel interactive
+          pushMessage('<em>...thinking...</em>','bot');
+          setTimeout(()=>{
+            // remove the thinking message and add real one
+            const thinking = messages.querySelector('.msg.bot:last-child');
+            if(thinking && thinking.innerHTML.includes('thinking')) thinking.remove();
+            pushMessage(escapeHtml(item.r),'bot');
+          },600);
+          return;
+        }
+      }
+
+      // Default helpful replies if no keyword matched
+      pushMessage('<em>...thinking...</em>','bot');
+      setTimeout(()=>{
+        const thinking = messages.querySelector('.msg.bot:last-child');
+        if(thinking && thinking.innerHTML.includes('thinking')) thinking.remove();
+        pushMessage("That's a great question! Try asking about a specific item like 'cake' or 'bread' for targeted tips.", 'bot');
+      },700);
+    }
+
+    // Initialize: wire quickAsk Enter key
+    quickAsk.addEventListener('keydown', (e)=>{ if(e.key==='Enter') quickAskBtn.click(); });
+
+    // Bonus: let users click a recipe to copy its name to the chat input for quick questions
+    recipesGrid.addEventListener('click', (e)=>{
+      // find the closest .card (article) element
+      const card = e.target.closest('.card');
+      if(!card) return;
+      const name = card.getAttribute('data-title');
+      // put recipe title into chat input as a quick prompt for the helper
+      chatInput.value = 'How do I make ' + name + '?';
+      chatInput.focus();
+    });
+
+    // Make sure the search runs empty at first to show all recipes
+    searchRecipes('');
+
+  </script>
+</body>
+</html>
