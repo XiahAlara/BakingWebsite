@@ -21,21 +21,26 @@ module.exports = function createRecipeRoutes(db) {
   const router = express.Router();
 
   // GET /api/recipes
-  // Return all recipes or filter by search or category.
+  // Return all recipes or filter by search, category, or country.
   router.get('/', (req, res) => {
     const search = req.query.search || '';
     const category = req.query.category || '';
+    const country = req.query.country || '';
     const whereClauses = [];
     const params = [];
 
     if (search) {
-      whereClauses.push('(title LIKE ? OR category LIKE ? OR ingredients LIKE ?)');
+      whereClauses.push('(title LIKE ? OR category LIKE ? OR ingredients LIKE ? OR country LIKE ?)');
       const searchValue = `%${search}%`;
-      params.push(searchValue, searchValue, searchValue);
+      params.push(searchValue, searchValue, searchValue, searchValue);
     }
     if (category) {
       whereClauses.push('category LIKE ?');
       params.push(`%${category}%`);
+    }
+    if (country) {
+      whereClauses.push('country LIKE ?');
+      params.push(`%${country}%`);
     }
 
     const sql = `SELECT * FROM recipes ${whereClauses.length ? 'WHERE ' + whereClauses.join(' AND ') : ''} ORDER BY created_at DESC`;
