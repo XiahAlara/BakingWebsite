@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe Management - Xiah's Baking AI</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="recipe-management">
+    <header class="site-header admin-header">
+      <div class="brand">Recipe Management</div>
+      <nav class="site-nav">
+        <a href="index.html">Back to site</a>
+        <a href="admin.html">Admin Panel</a>
+      </nav>
+    </header>
+
+    <main class="recipe-management-main">
+      <div class="recipe-management-container">
+        <!-- Authentication Section -->
+        <section id="auth-section" class="auth-section">
+          <div class="auth-card">
+            <h2>Authentication Required</h2>
+            <p>Enter the admin password to manage recipes.</p>
+            <form id="auth-form" class="admin-form">
+              <label for="management-password">Password</label>
+              <input id="management-password" type="password" placeholder="Enter admin password" required />
+              <button type="submit" class="button button-primary">Authenticate</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- Recipe Management Dashboard -->
+        <section id="management-dashboard" class="management-dashboard hidden">
+          <div class="management-header">
+            <div>
+              <h1>Recipe Management</h1>
+              <p>Create, edit, and manage your baking recipes</p>
+            </div>
+            <button id="create-recipe-btn" class="button button-primary large-btn">+ Create New Recipe</button>
+          </div>
+
+          <div class="management-layout">
+            <!-- Recipe Form Section -->
+            <div id="form-section" class="form-section hidden">
+              <div class="form-card">
+                <div class="form-header">
+                  <h2 id="form-title">Create New Recipe</h2>
+                  <button id="close-form-btn" class="button button-text">✕ Close</button>
+                </div>
+                <form id="recipe-form" class="admin-form" enctype="multipart/form-data">
+                  <input type="hidden" id="recipe-id" />
+                  
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="title">Recipe Name *</label>
+                      <input id="title" type="text" placeholder="e.g. Chocolate Chip Cookies" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="country">Country *</label>
+                      <input id="country" type="text" placeholder="e.g. USA" required />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="category">Category *</label>
+                      <select id="category" required>
+                        <option value="">Select a category</option>
+                        <option value="Cake">Cake</option>
+                        <option value="Cookie">Cookie</option>
+                        <option value="Bread">Bread</option>
+                        <option value="Pastry">Pastry</option>
+                        <option value="Cupcake">Cupcake</option>
+                        <option value="Brownie">Brownie</option>
+                        <option value="Donut">Donut</option>
+                        <option value="Pie">Pie</option>
+                        <option value="Breakfast">Breakfast</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="difficulty">Difficulty *</label>
+                      <select id="difficulty" required>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="prep_time">Prep Time *</label>
+                      <input id="prep_time" type="text" placeholder="e.g. 15 mins" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="bake_time">Bake Time *</label>
+                      <input id="bake_time" type="text" placeholder="e.g. 30 mins" required />
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="ingredients">Ingredients *</label>
+                    <textarea id="ingredients" rows="5" placeholder="List each ingredient with quantity on a new line" required></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="instructions">Instructions *</label>
+                    <textarea id="instructions" rows="6" placeholder="Write step-by-step instructions (number each step)" required></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="image">Recipe Image (Optional)</label>
+                    <input id="image" type="file" accept="image/*" />
+                    <small>Recommended size: 800x600px or larger</small>
+                  </div>
+
+                  <div class="form-actions">
+                    <button id="save-recipe" type="submit" class="button button-primary">Save Recipe</button>
+                    <button id="cancel-recipe" type="button" class="button button-secondary">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Recipe List Section -->
+            <div class="list-section">
+              <div class="list-header">
+                <h2>Recipe Library (<span id="recipe-count">0</span>)</h2>
+                <div class="list-controls">
+                  <input id="filter-input" type="search" placeholder="Filter recipes..." class="filter-input" />
+                </div>
+              </div>
+
+              <div id="recipe-list-container" class="recipe-list-container">
+                <div class="loading">Loading recipes...</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>© Xiah's Baking AI</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
