@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Xiah's Baking AI</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="login">
+    <main class="auth-page-main">
+      <section class="auth-card">
+        <h1>Welcome Back</h1>
+        <p>Log in to continue to your baking dashboard.</p>
+
+        <form id="login-user-form" class="admin-form">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="you@example.com" required />
+
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="Enter your password" required />
+
+          <button type="submit" class="button button-primary">Login</button>
+        </form>
+
+        <p id="login-status" class="status-message hidden" aria-live="polite"></p>
+        <p class="auth-switch">New here? <a href="signup.html">Create an account</a></p>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

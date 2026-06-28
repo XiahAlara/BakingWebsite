@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const uploadDir = path.join(__dirname, '..', 'uploads');
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -17,12 +18,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-module.exports = function createRecipeRoutes(db) {
+module.exports = function createRecipeRoutes(db, options = {}) {
   const router = express.Router();
+  const requireAuth = options.requireAuth || ((req, res, next) => next());
+  const requireAdmin = options.requireAdmin || ((req, res, next) => next());
 
   // GET /api/recipes
   // Return all recipes or filter by search, category, or country.
-  router.get('/', (req, res) => {
+  router.get('/', requireAuth, (req, res) => {
     const search = req.query.search || '';
     const category = req.query.category || '';
     const country = req.query.country || '';
@@ -30,9 +33,9 @@ module.exports = function createRecipeRoutes(db) {
     const params = [];
 
     if (search) {
-      whereClauses.push('(title LIKE ? OR category LIKE ? OR ingredients LIKE ? OR country LIKE ?)');
+      whereClauses.push('(title LIKE ? OR description LIKE ? OR category LIKE ? OR ingredients LIKE ? OR country LIKE ?)');
       const searchValue = `%${search}%`;
-      params.push(searchValue, searchValue, searchValue, searchValue);
+      params.push(searchValue, searchValue, searchValue, searchValue, searchValue);
     }
     if (category) {
       whereClauses.push('category LIKE ?');
@@ -54,7 +57,7 @@ module.exports = function createRecipeRoutes(db) {
 
   // GET /api/recipes/:id
   // Return a single recipe by id.
-  router.get('/:id', (req, res) => {
+  router.get('/:id', requireAuth, (req, res) => {
     const id = req.params.id;
     db.get('SELECT * FROM recipes WHERE id = ?', [id], (err, row) => {
       if (err) {
@@ -69,31 +72,39 @@ module.exports = function createRecipeRoutes(db) {
 
   // POST /api/recipes
   // Create a new recipe with optional image upload.
-  router.post('/', upload.single('image'), (req, res) => {
+  router.post('/', requireAdmin, upload.single('image'), (req, res) => {
     const recipe = {
       title: req.body.title || '',
+      description: req.body.description || '',
       country: req.body.country || '',
       category: req.body.category || '',
       prep_time: req.body.prep_time || '',
       bake_time: req.body.bake_time || '',
+      cooking_time: req.body.cooking_time || '',
       difficulty: req.body.difficulty || '',
       ingredients: req.body.ingredients || '',
       instructions: req.body.instructions || '',
       image_url: req.body.image_url || ''
     };
 
+    if (!recipe.title.trim()) {
+      return res.status(400).json({ error: 'Recipe title is required.' });
+    }
+
     if (req.file) {
       recipe.image_url = '/uploads/' + req.file.filename;
     }
 
-    const sql = `INSERT INTO recipes (title, country, category, prep_time, bake_time, difficulty, ingredients, instructions, image_url)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO recipes (title, description, country, category, prep_time, bake_time, cooking_time, difficulty, ingredients, instructions, image_url)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const params = [
       recipe.title,
+      recipe.description,
       recipe.country,
       recipe.category,
       recipe.prep_time,
       recipe.bake_time,
+      recipe.cooking_time,
       recipe.difficulty,
       recipe.ingredients,
       recipe.instructions,
@@ -115,7 +126,7 @@ module.exports = function createRecipeRoutes(db) {
 
   // PUT /api/recipes/:id
   // Update an existing recipe and its optional image.
-  router.put('/:id', upload.single('image'), (req, res) => {
+  router.put('/:id', requireAdmin, upload.single('image'), (req, res) => {
     const id = req.params.id;
     db.get('SELECT * FROM recipes WHERE id = ?', [id], (err, existing) => {
       if (err) {
@@ -127,10 +138,12 @@ module.exports = function createRecipeRoutes(db) {
 
       const updated = {
         title: req.body.title || existing.title,
+        description: req.body.description || existing.description,
         country: req.body.country || existing.country,
         category: req.body.category || existing.category,
         prep_time: req.body.prep_time || existing.prep_time,
         bake_time: req.body.bake_time || existing.bake_time,
+        cooking_time: req.body.cooking_time || existing.cooking_time,
         difficulty: req.body.difficulty || existing.difficulty,
         ingredients: req.body.ingredients || existing.ingredients,
         instructions: req.body.instructions || existing.instructions,
@@ -145,13 +158,15 @@ module.exports = function createRecipeRoutes(db) {
         }
       }
 
-      const sql = `UPDATE recipes SET title = ?, country = ?, category = ?, prep_time = ?, bake_time = ?, difficulty = ?, ingredients = ?, instructions = ?, image_url = ? WHERE id = ?`;
+      const sql = `UPDATE recipes SET title = ?, description = ?, country = ?, category = ?, prep_time = ?, bake_time = ?, cooking_time = ?, difficulty = ?, ingredients = ?, instructions = ?, image_url = ? WHERE id = ?`;
       const params = [
         updated.title,
+        updated.description,
         updated.country,
         updated.category,
         updated.prep_time,
         updated.bake_time,
+        updated.cooking_time,
         updated.difficulty,
         updated.ingredients,
         updated.instructions,
@@ -175,7 +190,7 @@ module.exports = function createRecipeRoutes(db) {
 
   // DELETE /api/recipes/:id
   // Remove a recipe and its uploaded image file if present.
-  router.delete('/:id', (req, res) => {
+  router.delete('/:id', requireAdmin, (req, res) => {
     const id = req.params.id;
     db.get('SELECT * FROM recipes WHERE id = ?', [id], (err, row) => {
       if (err) {

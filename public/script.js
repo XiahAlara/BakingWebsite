@@ -1,6 +1,10 @@
 const API_BASE = '/api/recipes';
 const CHAT_API = '/api/chat';
 const CHAT_HISTORY_API = '/api/chat/history';
+const AUTH_LOGIN_API = '/api/auth/login';
+const AUTH_SIGNUP_API = '/api/auth/signup';
+const AUTH_SESSION_API = '/api/auth/session';
+const AUTH_LOGOUT_API = '/api/auth/logout';
 
 const recipeGrid = document.getElementById('recipe-grid');
 const searchInput = document.getElementById('search-input');
@@ -11,6 +15,60 @@ const chatInput = document.getElementById('chat-input');
 const typingIndicator = document.getElementById('typing-indicator');
 
 const page = document.body.dataset.page;
+
+function showMessage(element, type, message) {
+  if (!element) return;
+  element.className = `status-message ${type}`;
+  element.textContent = message;
+  element.classList.remove('hidden');
+}
+
+function clearMessage(element) {
+  if (!element) return;
+  element.className = 'status-message hidden';
+  element.textContent = '';
+}
+
+async function getAuthSession() {
+  const response = await fetch(AUTH_SESSION_API, { credentials: 'same-origin' });
+  if (!response.ok) {
+    throw new Error('Unable to verify session.');
+  }
+  return response.json();
+}
+
+function renderHomeUser(user) {
+  const navUser = document.getElementById('nav-user');
+  const logoutButton = document.getElementById('logout-button');
+  const manageLink = document.getElementById('nav-manage-link');
+
+  if (navUser) {
+    navUser.textContent = user ? `Hi, ${user.fullName}` : '';
+    navUser.classList.toggle('hidden', !user);
+  }
+
+  if (logoutButton) {
+    logoutButton.classList.toggle('hidden', !user);
+  }
+
+  if (manageLink) {
+    const isAdmin = Boolean(user && user.isAdmin);
+    manageLink.classList.toggle('hidden', !isAdmin);
+  }
+}
+
+async function logoutUser() {
+  try {
+    await fetch(AUTH_LOGOUT_API, {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
+
+  window.location.href = 'login.html';
+}
 
 async function fetchRecipes(query = '') {
   const params = new URLSearchParams();
@@ -126,7 +184,26 @@ async function handleChat(event) {
 }
 
 if (page === 'home') {
-  loadRecipes();
+  const logoutButton = document.getElementById('logout-button');
+
+  (async () => {
+    try {
+      const sessionData = await getAuthSession();
+      if (!sessionData.authenticated || !sessionData.user) {
+        window.location.href = 'login.html';
+        return;
+      }
+      renderHomeUser(sessionData.user);
+    } catch (error) {
+      console.error('Session restore failed:', error);
+      window.location.href = 'login.html';
+      return;
+    }
+
+    loadRecipes();
+    loadChatHistory();
+  })();
+
   searchButton.addEventListener('click', () => loadRecipes(searchInput.value));
   searchInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
@@ -134,7 +211,128 @@ if (page === 'home') {
     }
   });
   chatForm?.addEventListener('submit', handleChat);
-  loadChatHistory();
+  logoutButton?.addEventListener('click', logoutUser);
+}
+
+if (page === 'login') {
+  const loginForm = document.getElementById('login-user-form');
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
+  const statusEl = document.getElementById('login-status');
+
+  (async () => {
+    try {
+      const sessionData = await getAuthSession();
+      if (sessionData.authenticated) {
+        window.location.href = 'index.html';
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
+    }
+  })();
+
+  loginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearMessage(statusEl);
+
+    const email = String(emailInput?.value || '').trim();
+    const password = String(passwordInput?.value || '');
+
+    if (!email || !password) {
+      showMessage(statusEl, 'error', 'Email and password are required.');
+      return;
+    }
+
+    try {
+      const response = await fetch(AUTH_LOGIN_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showMessage(statusEl, 'error', data.error || 'Invalid email or password.');
+        passwordInput.value = '';
+        return;
+      }
+
+      showMessage(statusEl, 'success', 'Login successful. Redirecting...');
+      window.location.href = 'index.html';
+    } catch (error) {
+      console.error('Login failed:', error);
+      showMessage(statusEl, 'error', 'Unable to log in right now. Please try again.');
+    }
+  });
+}
+
+if (page === 'signup') {
+  const signupForm = document.getElementById('signup-user-form');
+  const fullNameInput = document.getElementById('signup-name');
+  const emailInput = document.getElementById('signup-email');
+  const passwordInput = document.getElementById('signup-password');
+  const confirmPasswordInput = document.getElementById('signup-confirm-password');
+  const statusEl = document.getElementById('signup-status');
+
+  (async () => {
+    try {
+      const sessionData = await getAuthSession();
+      if (sessionData.authenticated) {
+        window.location.href = 'index.html';
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
+    }
+  })();
+
+  signupForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearMessage(statusEl);
+
+    const fullName = String(fullNameInput?.value || '').trim();
+    const email = String(emailInput?.value || '').trim();
+    const password = String(passwordInput?.value || '');
+    const confirmPassword = String(confirmPasswordInput?.value || '');
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      showMessage(statusEl, 'error', 'All fields are required.');
+      return;
+    }
+
+    if (password.length < 8) {
+      showMessage(statusEl, 'error', 'Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showMessage(statusEl, 'error', 'Passwords do not match.');
+      return;
+    }
+
+    try {
+      const response = await fetch(AUTH_SIGNUP_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ fullName, email, password, confirmPassword })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showMessage(statusEl, 'error', data.error || 'Unable to create account.');
+        return;
+      }
+
+      showMessage(statusEl, 'success', 'Account created. Redirecting...');
+      window.location.href = 'index.html';
+    } catch (error) {
+      console.error('Signup failed:', error);
+      showMessage(statusEl, 'error', 'Unable to create account right now. Please try again.');
+    }
+  });
 }
 
 if (page === 'admin') {
@@ -273,6 +471,9 @@ if (page === 'recipe-management') {
   const authSection = document.getElementById('auth-section');
   const managementDashboard = document.getElementById('management-dashboard');
   const authForm = document.getElementById('auth-form');
+  const authStatus = document.getElementById('auth-status');
+  const dashboardStatus = document.getElementById('dashboard-status');
+  const logoutButton = document.getElementById('logout-btn');
   const createRecipeBtn = document.getElementById('create-recipe-btn');
   const formSection = document.getElementById('form-section');
   const closeFormBtn = document.getElementById('close-form-btn');
@@ -280,15 +481,17 @@ if (page === 'recipe-management') {
   const cancelRecipeBtn = document.getElementById('cancel-recipe');
   const recipeListContainer = document.getElementById('recipe-list-container');
   const filterInput = document.getElementById('filter-input');
+  const searchButtonManagement = document.getElementById('search-button-management');
+  const clearSearchButton = document.getElementById('clear-search-management');
   const recipeCountSpan = document.getElementById('recipe-count');
+  const formTitle = document.getElementById('form-title');
 
   const mgmtFields = {
     id: document.getElementById('recipe-id'),
     title: document.getElementById('title'),
-    country: document.getElementById('country'),
+    description: document.getElementById('description'),
     category: document.getElementById('category'),
-    prep_time: document.getElementById('prep_time'),
-    bake_time: document.getElementById('bake_time'),
+    cooking_time: document.getElementById('cooking_time'),
     difficulty: document.getElementById('difficulty'),
     ingredients: document.getElementById('ingredients'),
     instructions: document.getElementById('instructions'),
@@ -296,39 +499,77 @@ if (page === 'recipe-management') {
   };
 
   let allRecipes = [];
+  let currentSearch = '';
+
+  function showStatus(element, type, message) {
+    if (!element) return;
+    element.className = `status-message ${type}`;
+    element.textContent = message;
+    element.classList.remove('hidden');
+  }
+
+  function clearStatus(element) {
+    if (!element) return;
+    element.className = 'status-message hidden';
+    element.textContent = '';
+  }
+
+  function setRecipeListLoading(message) {
+    recipeListContainer.innerHTML = `<div class="loading">${message}</div>`;
+  }
+
+  function showDashboard() {
+    authSection.classList.add('hidden');
+    managementDashboard.classList.remove('hidden');
+  }
+
+  function showAuth() {
+    managementDashboard.classList.add('hidden');
+    authSection.classList.remove('hidden');
+  }
 
   function resetMgmtForm() {
     mgmtFields.id.value = '';
     mgmtFields.title.value = '';
-    mgmtFields.country.value = '';
+    mgmtFields.description.value = '';
     mgmtFields.category.value = '';
-    mgmtFields.prep_time.value = '';
-    mgmtFields.bake_time.value = '';
+    mgmtFields.cooking_time.value = '';
     mgmtFields.difficulty.value = 'Easy';
     mgmtFields.ingredients.value = '';
     mgmtFields.instructions.value = '';
     mgmtFields.image.value = '';
     formSection.classList.add('hidden');
-    document.getElementById('form-title').textContent = 'Create New Recipe';
+    formTitle.textContent = 'Create New Recipe';
   }
 
   function populateMgmtForm(recipe) {
     mgmtFields.id.value = recipe.id;
     mgmtFields.title.value = recipe.title;
-    mgmtFields.country.value = recipe.country;
+    mgmtFields.description.value = recipe.description || '';
     mgmtFields.category.value = recipe.category;
-    mgmtFields.prep_time.value = recipe.prep_time;
-    mgmtFields.bake_time.value = recipe.bake_time;
+    mgmtFields.cooking_time.value = recipe.cooking_time || recipe.bake_time || '';
     mgmtFields.difficulty.value = recipe.difficulty;
     mgmtFields.ingredients.value = recipe.ingredients;
     mgmtFields.instructions.value = recipe.instructions;
-    document.getElementById('form-title').textContent = 'Edit Recipe';
+    formTitle.textContent = 'Edit Recipe';
     formSection.classList.remove('hidden');
     formSection.scrollIntoView({ behavior: 'smooth' });
   }
 
-  async function fetchAllMgmtRecipes() {
-    const response = await fetch(API_BASE);
+  async function fetchAllMgmtRecipes(search = '') {
+    const params = new URLSearchParams();
+    if (search.trim()) {
+      params.set('search', search.trim());
+    }
+
+    const response = await fetch(`${API_BASE}?${params.toString()}`, {
+      credentials: 'same-origin'
+    });
+
+    if (!response.ok) {
+      throw new Error('Unable to load recipes.');
+    }
+
     const recipes = await response.json();
     allRecipes = recipes;
     recipeCountSpan.textContent = recipes.length;
@@ -337,33 +578,34 @@ if (page === 'recipe-management') {
 
   function renderRecipeTable(recipes = allRecipes) {
     if (recipes.length === 0) {
-      recipeListContainer.innerHTML = '<p class="no-recipes">No recipes found. Create your first recipe!</p>';
+      recipeListContainer.innerHTML = '<p class="no-recipes">No recipes found yet. Try a different search or add your first recipe.</p>';
       return;
     }
 
-    let html = '<table class="recipe-table"><thead><tr>';
-    html += '<th>Recipe Name</th><th>Country</th><th>Category</th><th>Difficulty</th>';
-    html += '<th>Prep Time</th><th>Bake Time</th><th>Actions</th></tr></thead><tbody>';
+    let html = '<div class="management-recipe-grid">';
 
     recipes.forEach((recipe) => {
-      html += `<tr class="recipe-row" data-id="${recipe.id}">
-        <td class="recipe-name"><strong>${recipe.title}</strong></td>
-        <td>${recipe.country || 'N/A'}</td>
-        <td><span class="category-tag">${recipe.category || 'Baking'}</span></td>
-        <td><span class="difficulty-${recipe.difficulty.toLowerCase()}">${recipe.difficulty}</span></td>
-        <td>${recipe.prep_time || 'N/A'}</td>
-        <td>${recipe.bake_time || 'N/A'}</td>
-        <td class="recipe-actions">
+      html += `<article class="management-recipe-card" data-id="${recipe.id}">
+        <img src="${recipe.image_url || 'https://images.unsplash.com/photo-1512058564366-c9e5d6b04a7e?auto=format&fit=crop&w=1200&q=80'}" alt="${recipe.title}" class="management-recipe-image" />
+        <div class="management-recipe-content">
+          <h3>${recipe.title}</h3>
+          <p class="management-recipe-description">${recipe.description || 'No description provided yet.'}</p>
+          <div class="management-meta-row">
+            <span class="category-tag">${recipe.category || 'Baking'}</span>
+            <span class="difficulty-${(recipe.difficulty || 'easy').toLowerCase()}">${recipe.difficulty || 'Easy'}</span>
+            <span class="category-tag">Cook: ${recipe.cooking_time || recipe.bake_time || 'N/A'}</span>
+          </div>
+        </div>
+        <div class="recipe-actions">
           <button class="button button-sm button-secondary edit-recipe-btn" data-id="${recipe.id}">Edit</button>
           <button class="button button-sm button-danger delete-recipe-btn" data-id="${recipe.id}">Delete</button>
-        </td>
-      </tr>`;
+        </div>
+      </article>`;
     });
 
-    html += '</tbody></table>';
+    html += '</div>';
     recipeListContainer.innerHTML = html;
 
-    // Add event listeners
     document.querySelectorAll('.edit-recipe-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const recipe = allRecipes.find((r) => r.id == btn.dataset.id);
@@ -376,43 +618,67 @@ if (page === 'recipe-management') {
         const recipe = allRecipes.find((r) => r.id == btn.dataset.id);
         if (!recipe) return;
         if (!confirm(`Are you sure you want to delete "${recipe.title}"? This action cannot be undone.`)) return;
-        
+
         try {
-          await fetch(`${API_BASE}/${recipe.id}`, { method: 'DELETE' });
+          clearStatus(dashboardStatus);
+          const response = await fetch(`${API_BASE}/${recipe.id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.error || 'Failed to delete recipe.');
+          }
+
+          showStatus(dashboardStatus, 'success', `Deleted "${recipe.title}" successfully.`);
           await renderMgmtRecipes();
         } catch (error) {
           console.error('Error deleting recipe:', error);
-          alert('Failed to delete recipe. Please try again.');
+          showStatus(dashboardStatus, 'error', error.message || 'Failed to delete recipe.');
         }
       });
     });
   }
 
   async function renderMgmtRecipes() {
-    const recipes = await fetchAllMgmtRecipes();
-    renderRecipeTable(recipes);
+    try {
+      setRecipeListLoading('Loading recipes...');
+      const recipes = await fetchAllMgmtRecipes(currentSearch);
+      renderRecipeTable(recipes);
+    } catch (error) {
+      console.error('Error loading recipes:', error);
+      recipeListContainer.innerHTML = '<p class="no-recipes">Unable to load recipes right now.</p>';
+      showStatus(dashboardStatus, 'error', error.message || 'Unable to load recipes.');
+    }
   }
 
-  // Filter recipes
-  filterInput.addEventListener('input', (e) => {
-    const query = e.target.value.toLowerCase();
-    const filtered = allRecipes.filter(
-      (recipe) =>
-        recipe.title.toLowerCase().includes(query) ||
-        recipe.country.toLowerCase().includes(query) ||
-        recipe.category.toLowerCase().includes(query)
-    );
-    renderRecipeTable(filtered);
+  async function runSearch() {
+    currentSearch = filterInput.value.trim();
+    clearStatus(dashboardStatus);
+    await renderMgmtRecipes();
+  }
+
+  searchButtonManagement.addEventListener('click', runSearch);
+  clearSearchButton.addEventListener('click', async () => {
+    filterInput.value = '';
+    currentSearch = '';
+    clearStatus(dashboardStatus);
+    await renderMgmtRecipes();
+  });
+  filterInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await runSearch();
+    }
   });
 
-  // Create new recipe button
   createRecipeBtn.addEventListener('click', () => {
     resetMgmtForm();
     formSection.classList.remove('hidden');
     formSection.scrollIntoView({ behavior: 'smooth' });
   });
 
-  // Close form
   closeFormBtn.addEventListener('click', (e) => {
     e.preventDefault();
     resetMgmtForm();
@@ -423,16 +689,15 @@ if (page === 'recipe-management') {
     resetMgmtForm();
   });
 
-  // Save recipe (create or update)
   recipeForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    clearStatus(dashboardStatus);
 
     const formData = new FormData();
     formData.append('title', mgmtFields.title.value);
-    formData.append('country', mgmtFields.country.value);
+    formData.append('description', mgmtFields.description.value);
     formData.append('category', mgmtFields.category.value);
-    formData.append('prep_time', mgmtFields.prep_time.value);
-    formData.append('bake_time', mgmtFields.bake_time.value);
+    formData.append('cooking_time', mgmtFields.cooking_time.value);
     formData.append('difficulty', mgmtFields.difficulty.value);
     formData.append('ingredients', mgmtFields.ingredients.value);
     formData.append('instructions', mgmtFields.instructions.value);
@@ -443,44 +708,86 @@ if (page === 'recipe-management') {
     try {
       const method = mgmtFields.id.value ? 'PUT' : 'POST';
       const url = mgmtFields.id.value ? `${API_BASE}/${mgmtFields.id.value}` : API_BASE;
-      const response = await fetch(url, { method, body: formData });
+      const response = await fetch(url, { method, body: formData, credentials: 'same-origin' });
 
       if (response.ok) {
-        alert(mgmtFields.id.value ? 'Recipe updated successfully!' : 'Recipe created successfully!');
+        showStatus(
+          dashboardStatus,
+          'success',
+          mgmtFields.id.value ? 'Recipe updated successfully.' : 'Recipe created successfully.'
+        );
         resetMgmtForm();
         await renderMgmtRecipes();
       } else {
-        alert('Error saving recipe. Please try again.');
+        const body = await response.json().catch(() => ({}));
+        showStatus(dashboardStatus, 'error', body.error || 'Error saving recipe. Please try again.');
       }
     } catch (error) {
       console.error('Error saving recipe:', error);
-      alert('Failed to save recipe. Please try again.');
+      showStatus(dashboardStatus, 'error', 'Failed to save recipe. Please try again.');
     }
   });
 
-  // Authentication
   authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    clearStatus(authStatus);
     const password = document.getElementById('management-password').value;
 
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ password })
       });
 
+      const body = await response.json().catch(() => ({}));
+
       if (response.ok) {
-        authSection.classList.add('hidden');
-        managementDashboard.classList.remove('hidden');
+        showStatus(authStatus, 'success', body.message || 'Authenticated. Loading dashboard...');
+        showDashboard();
         await renderMgmtRecipes();
       } else {
-        alert('Password is incorrect. Please try again.');
+        showStatus(authStatus, 'error', body.message || 'Password is incorrect.');
         document.getElementById('management-password').value = '';
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      alert('Authentication failed. Please try again.');
+      showStatus(authStatus, 'error', 'Authentication failed. Please try again.');
     }
   });
+
+  logoutButton.addEventListener('click', async () => {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+
+    showAuth();
+    resetMgmtForm();
+    clearStatus(dashboardStatus);
+    showStatus(authStatus, 'success', 'Logged out successfully.');
+  });
+
+  (async function initializeManagementPage() {
+    setRecipeListLoading('Loading recipes...');
+    try {
+      const response = await fetch('/api/admin/session', { credentials: 'same-origin' });
+      const data = await response.json();
+      if (data.authenticated) {
+        showDashboard();
+        await renderMgmtRecipes();
+      } else {
+        showAuth();
+      }
+    } catch (error) {
+      console.error('Failed to restore session:', error);
+      showAuth();
+      showStatus(authStatus, 'error', 'Unable to verify admin session. Please log in again.');
+    }
+  })();
 }

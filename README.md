@@ -23,6 +23,7 @@ A beginner-friendly full-stack baking website with recipe search, AI helper demo
 ```
 OPENAI_API_KEY=your_openai_api_key
 SESSION_SECRET=some_secret_value
+ADMIN_PASSWORD=197364xiah'sbakingweb.com
 ```
 
 3. Run `npm install` to install dependencies.
@@ -41,7 +42,7 @@ If the user asks a non-baking question, the assistant redirects politely back to
 ## Admin Panel
 
 - Open `http://localhost:3000/admin.html`
-- Password: `xiahbakes123`
+- Password: `197364xiah'sbakingweb.com` (or your `ADMIN_PASSWORD` from `.env`)
 - Add, edit, delete recipes.
 - Upload recipe images from admin panel.
 
