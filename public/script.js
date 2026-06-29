@@ -41,6 +41,7 @@ function renderHomeUser(user) {
   const navUser = document.getElementById('nav-user');
   const logoutButton = document.getElementById('logout-button');
   const manageLink = document.getElementById('nav-manage-link');
+  const adminLink = document.getElementById('nav-admin-link');
 
   if (navUser) {
     navUser.textContent = user ? `Hi, ${user.fullName}` : '';
@@ -54,6 +55,11 @@ function renderHomeUser(user) {
   if (manageLink) {
     const isAdmin = Boolean(user && user.isAdmin);
     manageLink.classList.toggle('hidden', !isAdmin);
+  }
+
+  if (adminLink) {
+    const isAdmin = Boolean(user && user.isAdmin);
+    adminLink.classList.toggle('hidden', !isAdmin);
   }
 }
 
@@ -420,22 +426,9 @@ if (page === 'admin') {
     });
   }
 
-  loginForm.addEventListener('submit', async (event) => {
+  loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const password = document.getElementById('admin-password').value;
-    const response = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
-
-    if (response.ok) {
-      loginForm.classList.add('hidden');
-      adminDashboard.classList.remove('hidden');
-      renderAdminRecipes();
-    } else {
-      alert('Password is incorrect. Please try again.');
-    }
+    window.location.href = 'login.html';
   });
 
   recipeForm.addEventListener('submit', async (event) => {
@@ -464,6 +457,23 @@ if (page === 'admin') {
     event.preventDefault();
     resetForm();
   });
+
+  (async () => {
+    try {
+      const sessionData = await getAuthSession();
+      if (!sessionData.authenticated || !sessionData.user || !sessionData.user.isAdmin) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      loginForm?.classList.add('hidden');
+      adminDashboard?.classList.remove('hidden');
+      renderAdminRecipes();
+    } catch (error) {
+      console.error('Admin session verification failed:', error);
+      window.location.href = 'login.html';
+    }
+  })();
 }
 
 // Recipe Management Page
@@ -730,36 +740,13 @@ if (page === 'recipe-management') {
 
   authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    clearStatus(authStatus);
-    const password = document.getElementById('management-password').value;
-
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ password })
-      });
-
-      const body = await response.json().catch(() => ({}));
-
-      if (response.ok) {
-        showStatus(authStatus, 'success', body.message || 'Authenticated. Loading dashboard...');
-        showDashboard();
-        await renderMgmtRecipes();
-      } else {
-        showStatus(authStatus, 'error', body.message || 'Password is incorrect.');
-        document.getElementById('management-password').value = '';
-      }
-    } catch (error) {
-      console.error('Authentication error:', error);
-      showStatus(authStatus, 'error', 'Authentication failed. Please try again.');
-    }
+    showStatus(authStatus, 'info', 'Please sign in with an administrator account from the login page.');
+    window.location.href = 'login.html';
   });
 
   logoutButton.addEventListener('click', async () => {
     try {
-      await fetch('/api/admin/logout', {
+      await fetch(AUTH_LOGOUT_API, {
         method: 'POST',
         credentials: 'same-origin'
       });
@@ -767,27 +754,22 @@ if (page === 'recipe-management') {
       console.error('Logout failed:', error);
     }
 
-    showAuth();
-    resetMgmtForm();
-    clearStatus(dashboardStatus);
-    showStatus(authStatus, 'success', 'Logged out successfully.');
+    window.location.href = 'login.html';
   });
 
   (async function initializeManagementPage() {
     setRecipeListLoading('Loading recipes...');
     try {
-      const response = await fetch('/api/admin/session', { credentials: 'same-origin' });
-      const data = await response.json();
-      if (data.authenticated) {
+      const sessionData = await getAuthSession();
+      if (sessionData.authenticated && sessionData.user && sessionData.user.isAdmin) {
         showDashboard();
         await renderMgmtRecipes();
       } else {
-        showAuth();
+        window.location.href = 'login.html';
       }
     } catch (error) {
       console.error('Failed to restore session:', error);
-      showAuth();
-      showStatus(authStatus, 'error', 'Unable to verify admin session. Please log in again.');
+      window.location.href = 'login.html';
     }
   })();
 }
